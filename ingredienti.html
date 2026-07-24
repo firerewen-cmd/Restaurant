@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Scorte & Esauriti - Ristorante</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        .app-container { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background-color: var(--bg-sidebar); color: #ffffff; display: flex; flex-direction: column; justify-content: space-between; border-right: 1px solid var(--border-color); }
+        .sidebar-brand { padding: 1.5rem; font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid rgba(255, 255, 255, 0.1); color: var(--primary); }
+        .sidebar-menu { list-style: none; padding: 1rem 0; }
+        .sidebar-menu li a { display: block; padding: 0.85rem 1.5rem; color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 500; border-left: 3px solid transparent; }
+        .sidebar-menu li a:hover, .sidebar-menu li a.active { color: #ffffff; background-color: rgba(255, 255, 255, 0.05); border-left-color: var(--primary); }
+        .main-wrapper { flex: 1; display: flex; flex-direction: column; background-color: var(--bg-main); }
+        .topbar { height: 64px; background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
+        .content-area { padding: 2rem; flex: 1; }
+
+        /* Griglia Ingredienti Spigolosa */
+        .ingredients-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; margin-top: 1.5rem; }
+        
+        .ingredient-card { 
+            background: var(--bg-card); 
+            border: 1px solid var(--border-color); 
+            padding: 1.25rem; 
+            box-shadow: var(--shadow); 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+        }
+
+        .ingredient-info { display: flex; flex-direction: column; }
+        .ingredient-name { font-weight: 700; font-size: 1rem; text-transform: uppercase; }
+        .ingredient-status { font-size: 0.75rem; font-weight: 600; margin-top: 0.2rem; }
+        .status-available { color: var(--primary); }
+        .status-out { color: var(--danger); }
+
+        /* Switch Toggle Spigoloso */
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { 
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; 
+            background-color: var(--border-color); transition: .2s; 
+            border: 1px solid var(--border-color);
+        }
+        .slider:before { 
+            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; 
+            background-color: white; transition: .2s; 
+        }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(24px); }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div>
+                <div class="sidebar-brand">PANNELLO RISTORANTE</div>
+                <ul class="sidebar-menu">
+                    <li><a href="dashboard.html">📊 PANORAMICA</a></li>
+                    <li><a href="menu.html">🍕 MENU DETTAGLIATO</a></li>
+                    <li><a href="recensioni.html">⭐ RECENSIONI & GRAFICI</a></li>
+                    <li><a href="ingredienti.html" class="active">📦 INGREDIENTI / ESAURITI</a></li>
+                </ul>
+            </div>
+            <div style="padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <button onclick="logoutUser()" class="btn btn-outline" style="width: 100%; color: #ef4444; border-color: #ef4444;">LOGOUT</button>
+            </div>
+        </aside>
+
+        <!-- MAIN WRAPPER -->
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div style="font-weight: 600;">Gestione Scorte e Materie Prime</div>
+                <button id="themeToggleBtn" class="btn btn-outline">🌙 Tema Scuro</button>
+            </header>
+
+            <main class="content-area">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2>Disponibilità Materie Prime</h2>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2rem;">
+                            Disattivando una materia prima, i piatti associati verranno sbarrati sul menu cliente in tempo reale.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- LISTA SWITCH INGREDIENTI -->
+                <div class="ingredients-grid" id="ingredientsContainer">
+                    <!-- Caricamento dinamico da Supabase -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="js/supabase-config.js"></script>
+    <script src="js/ingredienti-main.js"></script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+/* ==========================================
+   DESIGN SYSTEM & VARIABILI CSS
+   ========================================== */
+
+/* Tema Chiaro (Default) */
+:root {
+    /* Palette Colori */
+    --bg-main: #f8fafc;
+    --bg-card: #ffffff;
+    --bg-sidebar: #0f172a;
+    
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+
+    /* Verde Business */
+    --primary: #059669;
+    --primary-hover: #047857;
+    --primary-light: #d1fae5;
+
+    /* Stati e feedback */
+    --danger: #dc2626;
+    --warning: #d97706;
+
+    /* Stile Spigoloso */
+    --radius: 0px; 
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* Tema Scuro (Attivabile aggiungendo la classe .dark-mode al body) */
+body.dark-mode {
+    --bg-main: #090d16;
+    --bg-card: #131c2e;
+    --bg-sidebar: #050811;
+
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border-color: #1e293b;
+
+    --primary: #10b981;
+    --primary-hover: #059669;
+    --primary-light: rgba(16, 185, 129, 0.15);
+}
+
+/* ==========================================
+   RESET & STILI BASE SPIGOLOSI
+   ========================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    border-radius: var(--radius) !important; /* Forza lo stile spigoloso ovunque */
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    line-height: 1.5;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+/* Bottoni Spigolosi Business */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn-outline {
+    background-color: transparent;
+    border-color: var(--border-color);
+    color: var(--text-main);
+}
+
+.btn-outline:hover {
+    background-color: var(--border-color);
+}
+
+/* Input e Form Spigolosi */
+input, select, textarea {
+    width: 100%;
+    padding: 0.65rem;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    font-size: 0.9rem;
+    outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: var(--primary);
+}

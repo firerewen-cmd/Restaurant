@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Menu Dettagliato - Ristorante</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        .app-container { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background-color: var(--bg-sidebar); color: #ffffff; display: flex; flex-direction: column; justify-content: space-between; border-right: 1px solid var(--border-color); }
+        .sidebar-brand { padding: 1.5rem; font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid rgba(255, 255, 255, 0.1); color: var(--primary); }
+        .sidebar-menu { list-style: none; padding: 1rem 0; }
+        .sidebar-menu li a { display: block; padding: 0.85rem 1.5rem; color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 500; border-left: 3px solid transparent; }
+        .sidebar-menu li a:hover, .sidebar-menu li a.active { color: #ffffff; background-color: rgba(255, 255, 255, 0.05); border-left-color: var(--primary); }
+        .main-wrapper { flex: 1; display: flex; flex-direction: column; background-color: var(--bg-main); }
+        .topbar { height: 64px; background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
+        .content-area { padding: 2rem; flex: 1; }
+        
+        /* Bar Azioni & Categorie */
+        .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+        .category-tabs { display: flex; gap: 0.5rem; margin-bottom: 2rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem; overflow-x: auto; }
+        .cat-btn { padding: 0.5rem 1rem; background: transparent; border: 1px solid var(--border-color); cursor: pointer; font-weight: 600; font-size: 0.85rem; color: var(--text-muted); }
+        .cat-btn.active { background-color: var(--primary); color: white; border-color: var(--primary); }
+
+        /* Card Piatto Spigolosa e Dettagliata */
+        .category-section { margin-bottom: 2.5rem; }
+        .category-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; text-transform: uppercase; border-left: 4px solid var(--primary); padding-left: 0.5rem; }
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+        
+        .dish-card { background: var(--bg-card); border: 1px solid var(--border-color); padding: 1.25rem; box-shadow: var(--shadow); position: relative; display: flex; flex-direction: column; justify-content: space-between; }
+        .dish-card.disabled { opacity: 0.6; filter: grayscale(80%); }
+        .dish-card.disabled::after { content: "INGREDIENTE ESAURITO"; position: absolute; top: 10px; right: 10px; background: var(--danger); color: white; font-size: 0.65rem; font-weight: 800; padding: 2px 6px; }
+
+        .dish-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
+        .dish-title { font-weight: 700; font-size: 1.1rem; }
+        .dish-price { font-weight: 800; color: var(--primary); font-size: 1.1rem; }
+        .dish-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+
+        /* Tag Materie Prime & Allergeni UE */
+        .tags-container { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.75rem; }
+        .tag-badge { font-size: 0.7rem; background-color: rgba(0,0,0,0.05); border: 1px solid var(--border-color); padding: 2px 6px; font-weight: 600; text-transform: uppercase; }
+        .tag-badge.out-of-stock { background-color: rgba(220, 38, 38, 0.1); border-color: var(--danger); color: var(--danger); }
+
+        .allergens-container { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-bottom: 1rem; }
+        .allergen-badge { font-size: 0.65rem; font-weight: 700; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 1px 5px; }
+
+        .dish-actions { display: flex; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem; }
+
+        /* MODALE FORM SPIGOLOSO */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; max-width: 600px; padding: 2rem; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+        
+        .allergens-selector { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.5rem; margin-top: 0.5rem; }
+        .allergen-checkbox { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; background: var(--bg-main); padding: 0.4rem; border: 1px solid var(--border-color); cursor: pointer; }
+        .allergen-checkbox input { width: auto; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div>
+                <div class="sidebar-brand">PANNELLO RISTORANTE</div>
+                <ul class="sidebar-menu">
+                    <li><a href="dashboard.html">📊 PANORAMICA</a></li>
+                    <li><a href="menu.html" class="active">🍕 MENU DETTAGLIATO</a></li>
+                    <li><a href="recensioni.html">⭐ RECENSIONI & GRAFICI</a></li>
+                    <li><a href="ingredienti.html">📦 INGREDIENTI / ESAURITI</a></li>
+                </ul>
+            </div>
+            <div style="padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <button onclick="logoutUser()" class="btn btn-outline" style="width: 100%; color: #ef4444; border-color: #ef4444;">LOGOUT</button>
+            </div>
+        </aside>
+
+        <!-- MAIN WRAPPER -->
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div style="font-weight: 600;">Gestione Menu Dettagliato</div>
+                <button id="themeToggleBtn" class="btn btn-outline">🌙 Tema Scuro</button>
+            </header>
+
+            <main class="content-area">
+                <div class="action-bar">
+                    <h2>Editor Menu</h2>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-outline" onclick="openCategoryModal()">+ NUOVA CATEGORIA</button>
+                        <button class="btn btn-primary" onclick="openDishModal()">+ NUOVO PIATTO</button>
+                    </div>
+                </div>
+
+                <!-- CATEGORIE NAVIGATIVE -->
+                <div class="category-tabs" id="categoryTabs">
+                    <button class="cat-btn active">TUTTI I PIATTI</button>
+                    <!-- Categorie caricate dinamicamente -->
+                </div>
+
+                <!-- LISTA PIATTI DIVISA PER CATEGORIE -->
+                <div id="menuSectionsContainer">
+                    <!-- Qui verranno caricate le sezioni con le relative griglie dei piatti -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODALE: AGGIUNGI / MODIFICA PIATTO -->
+    <div class="modal" id="dishModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Nuovo Piatto</h3>
+                <button class="btn btn-outline" onclick="closeDishModal()" style="padding: 0.2rem 0.6rem;">✕</button>
+            </div>
+            <form id="dishForm">
+                <input type="hidden" id="dishId">
+                
+                <div style="margin-bottom: 1rem;">
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">NOME PIATTO</label>
+                    <input type="text" id="dishName" required placeholder="Es. Pizza Margherita Speciale">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">PREZZO (€)</label>
+                        <input type="number" step="0.50" id="dishPrice" required placeholder="8.50">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">CATEGORIA</label>
+                        <select id="dishCategory" required>
+                            <!-- Categorie da Supabase -->
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">DESCRIZIONE / INGREDIENTI VISIBILI</label>
+                    <textarea id="dishDescription" rows="2" placeholder="Pomodoro San Marzano, Mozzarella di Bufala, Basilico..."></textarea>
+                </div>
+
+                <!-- TAG MATERIE PRIME PER GESTIONE ESAURITI -->
+                <div style="margin-bottom: 1rem;">
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.2rem;">TAG MATERIE PRIME (Separati da virgola)</label>
+                    <small style="color: var(--text-muted); display: block; margin-bottom: 0.4rem;">Servono per sbarrare il piatto se una materia prima finisce.</small>
+                    <input type="text" id="dishIngredientsTags" placeholder="mozzarella-bufala, pomodoro, basilico, olio-evo">
+                </div>
+
+                <!-- ALLERGENI UE -->
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">ALLERGENI (Regolamento UE)</label>
+                    <div class="allergens-selector" id="allergensSelector">
+                        <!-- Generati via JS (Glutine, Crostacei, Uova, Pesce, Latte, ecc.) -->
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-outline" onclick="closeDishModal()">ANNULLA</button>
+                    <button type="submit" class="btn btn-primary">SALVA PIATTO</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODALE: NUOVA CATEGORIA -->
+    <div class="modal" id="categoryModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Nuova Categoria</h3>
+                <button class="btn btn-outline" onclick="closeCategoryModal()" style="padding: 0.2rem 0.6rem;">✕</button>
+            </div>
+            <form id="categoryForm">
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">NOME CATEGORIA</label>
+                    <input type="text" id="categoryName" required placeholder="Es. Antipasti, Primi, Dolci">
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-outline" onclick="closeCategoryModal()">ANNULLA</button>
+                    <button type="submit" class="btn btn-primary">CREA CATEGORIA</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/supabase-config.js"></script>
+    <script src="js/menu-main.js"></script>
+</body>
+</html>

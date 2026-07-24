@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Gestione Ristorante</title>
+    <!-- Chart.js per i grafici -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Foglio di Stile Unificato -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        /* Layout Dashboard Spigolosa */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .sidebar-brand {
+            padding: 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--primary);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 1rem 0;
+        }
+
+        .sidebar-menu li a {
+            display: block;
+            padding: 0.85rem 1.5rem;
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-menu li a:hover, 
+        .sidebar-menu li a.active {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-left-color: var(--primary);
+        }
+
+        /* Main Content */
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-main);
+        }
+
+        .topbar {
+            height: 64px;
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+        }
+
+        .topbar-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .topbar-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .content-area {
+            padding: 2rem;
+            flex: 1;
+        }
+
+        /* Sezioni Dinamiche */
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- BARRA LATERALE (SIDEBAR) -->
+        <aside class="sidebar">
+            <div>
+                <div class="sidebar-brand">
+                    <span>PANNELLO RISTORANTE</span>
+                </div>
+                <ul class="sidebar-menu">
+            <li><a href="dashboard.html" class="active">📊 PANORAMICA</a></li>
+            <li><a href="menu.html">🍕 MENU DETTAGLIATO</a></li>
+            <li><a href="recensioni.html">⭐ RECENSIONI & GRAFICI</a></li>
+            <li><a href="ingredienti.html">📦 INGREDIENTI / ESAURITI</a></li>
+        </ul>
+                
+            </div>
+            
+            <div style="padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <button onclick="logoutUser()" class="btn btn-outline" style="width: 100%; color: #ef4444; border-color: #ef4444;">LOGOUT</button>
+            </div>
+        </aside>
+
+        <!-- AREA PRINCIPALE -->
+        <div class="main-wrapper">
+            <!-- TOPBAR -->
+            <header class="topbar">
+                <div class="topbar-title" id="pageTitle">Gestione Menu</div>
+                <div class="topbar-actions">
+                    <button id="themeToggleBtn" class="btn btn-outline">🌙 Tema Scuro</button>
+                </div>
+            </header>
+
+            <!-- CONTENUTO DELLE SEZIONI -->
+            <main class="content-area">
+                
+                <!-- WIDGET RAPIDI (KPI) -->
+                <div class="kpi-grid">
+                    <!-- Card 1: Media Stelle -->
+                    <div class="kpi-card">
+                        <span class="kpi-title">MEDIA STELLE</span>
+                        <div class="kpi-value" id="val-media-stelle">4.8 ★</div>
+                        <span class="kpi-subtext">+0.2 rispetto a ieri</span>
+                    </div>
+
+                    <!-- Card 2: Totale Recensioni -->
+                    <div class="kpi-card">
+                        <span class="kpi-title">RECENSIONI OGGI</span>
+                        <div class="kpi-value" id="val-tot-recensioni">24</div>
+                        <span class="kpi-subtext">18 con commento</span>
+                    </div>
+
+                    <!-- Card 3: Piatti Attivi -->
+                    <div class="kpi-card">
+                        <span class="kpi-title">PIATTI IN MENU</span>
+                        <div class="kpi-value" id="val-piatti-attivi">42</div>
+                        <span class="kpi-subtext" style="color: var(--danger);">1 ingrediente esaurito</span>
+                    </div>
+                </div>
+
+                <!-- GRAFICO ANDAMENTO STELLE -->
+                <div class="chart-container">
+                    <h3 style="margin-bottom: 1rem; font-size: 1rem;">Andamento Media Stelle (Ultimi 7 Giorni)</h3>
+                    <!-- Canvas per Chart.js -->
+                    <canvas id="starsChart" height="90"></canvas>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script src="js/supabase-config.js"></script>
+    <script src="js/dashboard-main.js"></script>
+</body>
+</html>
