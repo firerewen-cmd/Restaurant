@@ -8,47 +8,33 @@ let outOfStockTags = new Set();
 let currentTable = "1";
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Rileva il numero del tavolo dall'URL (es. index.html?tavolo=4)
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('tavolo')) {
         currentTable = urlParams.get('tavolo');
     }
     document.getElementById('tableDisplay').textContent = `TAVOLO ${currentTable}`;
 
-    // 2. Inizializza i componenti grafici delle stelle
     initStarRating();
-
-    // 3. Carica inizialmente i dati
     await loadClientData();
-
-    // 4. Connette il client in REALTIME al database di Supabase
     setupClientRealtime();
 
-    // Event listener per l'invio della recensione
     document.getElementById('clientReviewForm').addEventListener('submit', handleSendReview);
 });
 
-// ------------------------------------------
-// 1. CARICAMENTO E RENDERING
-// ------------------------------------------
 async function loadClientData() {
-    // A. Scarica le categorie
-    const { data: catData } = await window.db.from('categorie').select('*').order('id', { ascending: true });
+    const { data: catData } = await window.db.from('menu_categorie').select('*').order('id', { ascending: true });
     categoriesCache = catData || [];
 
-    // B. Scarica gli ingredienti esauriti
     const { data: outData } = await window.db.from('ingredienti_esauriti').select('tag_nome');
     outOfStockTags = new Set((outData || []).map(item => item.tag_nome.toLowerCase()));
 
-    // C. Scarica i piatti
-    const { data: dishData } = await window.db.from('piatti').select('*').order('id', { ascending: true });
+    const { data: dishData } = await window.db.from('menu_piatti').select('*').order('id', { ascending: true });
     dishesCache = dishData || [];
 
     renderClientUI();
 }
 
 function renderClientUI() {
-    // Rendering Tab Categorie
     const tabsContainer = document.getElementById('clientCategoryTabs');
     let tabsHTML = `<button class="cat-tab active" onclick="filterClientCategory('all')">TUTTI</button>`;
     categoriesCache.forEach(cat => {
@@ -56,7 +42,6 @@ function renderClientUI() {
     });
     tabsContainer.innerHTML = tabsHTML;
 
-    // Rendering Griglia Menu
     const menuContainer = document.getElementById('clientMenuContainer');
     menuContainer.innerHTML = '';
 
@@ -75,11 +60,8 @@ function renderClientUI() {
         `;
 
         categoryDishes.forEach(dish => {
-            // Controllo se il piatto contiene ingredienti esauriti
             const tags = dish.ingredienti_tags ? dish.ingredienti_tags.split(',').map(t => t.trim().toLowerCase()) : [];
             const isOutOfStock = tags.some(t => outOfStockTags.has(t)) || dish.disponibile === false;
-
-            // Allergeni UE
             const allergens = dish.allergeni || [];
             const allergensHTML = allergens.map(a => `<span class="client-allergen-badge">⚠️ ${a}</span>`).join('');
 
@@ -100,9 +82,6 @@ function renderClientUI() {
     });
 }
 
-// ------------------------------------------
-// 2. FILTRAGGIO CATEGORIE
-// ------------------------------------------
 function filterClientCategory(catId) {
     document.querySelectorAll('.cat-tab').forEach(tab => tab.classList.remove('active'));
     event.target.classList.add('active');
@@ -116,39 +95,27 @@ function filterClientCategory(catId) {
     }
 }
 
-// ------------------------------------------
-// 3. REALTIME SYNC (Aggiornamento istantaneo)
-// ------------------------------------------
 function setupClientRealtime() {
     window.db
         .channel('client-live-updates')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'piatti' }, () => loadClientData())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'categorie' }, () => loadClientData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_piatti' }, () => loadClientData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_categorie' }, () => loadClientData())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredienti_esauriti' }, () => loadClientData())
         .subscribe();
 }
 
-// ------------------------------------------
-// 4. GESTIONE RECENSIONI CLIENTE
-// ------------------------------------------
 function initStarRating() {
     const stars = document.querySelectorAll('#starRatingContainer .star');
     const ratingInput = document.getElementById('selectedRating');
 
     stars.forEach((star, index) => {
-        // Valore iniziale di default a 5 stelle
         if (index < 5) star.classList.add('active');
-
         star.addEventListener('click', () => {
             const value = parseInt(star.getAttribute('data-value'));
             ratingInput.value = value;
-
             stars.forEach((s, i) => {
-                if (i < value) {
-                    s.classList.add('active');
-                } else {
-                    s.classList.remove('active');
-                }
+                if (i < value) s.classList.add('active');
+                else s.classList.remove('active');
             });
         });
     });
@@ -159,16 +126,15 @@ async function handleSendReview(e) {
     const stelle = parseInt(document.getElementById('selectedRating').value);
     const commento = document.getElementById('reviewComment').value.trim();
 
-    const { error } = await window.db.from('recensioni').insert([
+    const { error } = await window.db.from('feedback').insert([
         { stelle, commento, tavolo: currentTable }
     ]);
 
     if (error) {
         alert('Errore durante l\'invio della recensione. Riprova!');
-        console.error(error);
         return;
     }
 
-    alert('Grazie per la tua recensione! È stata inviata al ristoratore.');
+    alert('Grazie per la tua recensione!');
     document.getElementById('reviewComment').value = '';
 }

@@ -6,23 +6,17 @@ let reviewsCache = [];
 let chartInstance = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Carica recensioni esistenti
     await loadReviews();
-
-    // 2. Ascolta in REALTIME nuove recensioni dai clienti
     setupReviewsRealtime();
 });
 
 async function loadReviews() {
     const { data, error } = await window.db
-        .from('recensioni')
+        .from('feedback')
         .select('*')
         .order('created_at', { ascending: false });
 
-    if (error) {
-        console.error('Errore caricamento recensioni:', error);
-        return;
-    }
+    if (error) return console.error('Errore recensioni:', error);
 
     reviewsCache = data || [];
     renderReviews();
@@ -34,12 +28,10 @@ function setupReviewsRealtime() {
         .channel('realtime-recensioni')
         .on(
             'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'recensioni' },
+            { event: 'INSERT', schema: 'public', table: 'feedback' },
             (payload) => {
-                console.log('⭐ Nuova recensione ricevuta in tempo reale!', payload.new);
-                // Aggiungiamo la nuova recensione in cima
                 reviewsCache.unshift(payload.new);
-                renderReviews(true); // true per animare la nuova card
+                renderReviews(true);
                 updateChart();
             }
         )
@@ -54,8 +46,9 @@ function renderReviews(isNew = false) {
     }
 
     container.innerHTML = reviewsCache.map((rev, index) => {
-        const stars = '★'.repeat(rev.stelle) + '☆'.repeat(5 - rev.stelle);
-        const date = new Date(rev.created_at).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const stelle = rev.stelle || rev.voto || 5;
+        const stars = '★'.repeat(stelle) + '☆'.repeat(5 - stelle);
+        const date = rev.created_at ? new Date(rev.created_at).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Oggi';
         const animClass = (isNew && index === 0) ? 'new-arrival' : '';
 
         return `
@@ -77,10 +70,10 @@ function updateChart() {
     const ctx = document.getElementById('ratingsChart');
     if (!ctx) return;
 
-    // Calcoliamo quanti 1★, 2★, 3★, 4★, 5★ ci sono
     const counts = [0, 0, 0, 0, 0];
     reviewsCache.forEach(r => {
-        if (r.stelle >= 1 && r.stelle <= 5) counts[r.stelle - 1]++;
+        const v = r.stelle || r.voto || 5;
+        if (v >= 1 && v <= 5) counts[v - 1]++;
     });
 
     if (chartInstance) chartInstance.destroy();
@@ -94,7 +87,7 @@ function updateChart() {
             datasets: [{
                 data: counts,
                 backgroundColor: primaryColor,
-                borderRadius: 0 // Spigoloso
+                borderRadius: 0
             }]
         },
         options: {
